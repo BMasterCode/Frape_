@@ -1,0 +1,82 @@
+<% const p = pestanas.find(x => x.clave === 'balance_general'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Balance General - Frape Club', pestanaActiva: 'balance_general' }) %>
+
+<h1>Balance General</h1>
+
+<form method="GET" action="/balance-general" class="fila" style="align-items:flex-end; margin-bottom:16px;">
+  <div class="campo" style="max-width:180px;">
+    <label for="mesSel">Mes</label>
+    <input type="month" id="mesSel" name="mes" value="<%= mes %>" onchange="this.form.submit()" />
+  </div>
+</form>
+
+<form action="/balance-general" method="POST">
+  <input type="hidden" name="mes" value="<%= mes %>" />
+  <div class="fila" style="align-items:flex-start;">
+    <div class="tarjeta" style="flex:1; min-width:280px;">
+      <h2 style="margin-top:0">Activo</h2>
+      <h3 style="font-size:0.95rem;">Activo Corriente</h3>
+      <div class="campo">
+        <label for="caja_bancos">Caja y bancos</label>
+        <input type="number" step="0.01" id="caja_bancos" name="caja_bancos" value="<%= b.caja_bancos %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+      <div class="campo">
+        <label for="cuentas_cobrar">Cuentas por cobrar</label>
+        <input type="number" step="0.01" id="cuentas_cobrar" name="cuentas_cobrar" value="<%= b.cuentas_cobrar %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+      <div class="campo">
+        <label for="inventario">Inventario (insumos)</label>
+        <input type="number" step="0.01" id="inventario" name="inventario" value="<%= b.inventario %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+
+      <h3 style="font-size:0.95rem;">Activo No Corriente</h3>
+      <div class="campo">
+        <label>Valor en libros de Activos Fijos (automático)</label>
+        <input type="text" value="Bs <%= valorActivosFijos.toFixed(2) %>" readonly />
+      </div>
+
+      <p style="font-weight:700; margin-top:12px;">
+        TOTAL ACTIVO: Bs <%= (Number(b.caja_bancos) + Number(b.cuentas_cobrar) + Number(b.inventario) + valorActivosFijos).toFixed(2) %>
+      </p>
+    </div>
+
+    <div class="tarjeta" style="flex:1; min-width:280px;">
+      <h2 style="margin-top:0">Pasivo y Patrimonio</h2>
+      <h3 style="font-size:0.95rem;">Pasivo Corriente</h3>
+      <div class="campo">
+        <label for="cuentas_pagar">Cuentas por pagar</label>
+        <input type="number" step="0.01" id="cuentas_pagar" name="cuentas_pagar" value="<%= b.cuentas_pagar %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+      <div class="campo">
+        <label for="sueldos_pagar">Sueldos por pagar</label>
+        <input type="number" step="0.01" id="sueldos_pagar" name="sueldos_pagar" value="<%= b.sueldos_pagar %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+      <div class="campo">
+        <label for="impuestos_pagar">Impuestos por pagar</label>
+        <input type="number" step="0.01" id="impuestos_pagar" name="impuestos_pagar" value="<%= b.impuestos_pagar %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+
+      <h3 style="font-size:0.95rem;">Pasivo No Corriente</h3>
+      <div class="campo">
+        <label for="prestamo_largo_plazo">Préstamo a largo plazo</label>
+        <input type="number" step="0.01" id="prestamo_largo_plazo" name="prestamo_largo_plazo" value="<%= b.prestamo_largo_plazo %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+
+      <h3 style="font-size:0.95rem;">Patrimonio</h3>
+      <div class="campo">
+        <label for="capital_social">Capital social</label>
+        <input type="number" step="0.01" id="capital_social" name="capital_social" value="<%= b.capital_social %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+      <div class="campo">
+        <label for="utilidades_retenidas">Utilidades retenidas</label>
+        <input type="number" step="0.01" id="utilidades_retenidas" name="utilidades_retenidas" value="<%= b.utilidades_retenidas %>" <%= puedeEditar ? '' : 'readonly' %> />
+      </div>
+    </div>
+  </div>
+
+  <% if (puedeEditar) { %>
+    <button type="submit">Guardar balance de <%= mes %></button>
+  <% } %>
+</form>
+
+<%- include('../partials/footer') %>

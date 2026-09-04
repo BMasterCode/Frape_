@@ -1,0 +1,90 @@
+<% const p = pestanas.find(x => x.clave === 'activos_fijos'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Activos Fijos - Frape Club', pestanaActiva: 'activos_fijos' }) %>
+
+<h1>Activos Fijos y Depreciación</h1>
+<p style="color:var(--color-texto-suave); font-size:0.9rem; margin-top:-8px;">
+  Depreciación en línea recta = (Costo − Valor residual) / Vida útil. El valor en libros se recalcula solo con el tiempo.
+</p>
+
+<% if (puedeEditar) { %>
+<div class="tarjeta">
+  <h2 style="margin-top:0">Registrar activo</h2>
+  <form action="/activos-fijos" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="nombre">Nombre del activo</label>
+        <input type="text" id="nombre" name="nombre" required />
+      </div>
+      <div class="campo">
+        <label for="fecha_compra">Fecha de compra</label>
+        <input type="date" id="fecha_compra" name="fecha_compra" required />
+      </div>
+    </div>
+    <div class="fila">
+      <div class="campo">
+        <label for="costo">Costo (Bs)</label>
+        <input type="number" step="0.01" min="0" id="costo" name="costo" required />
+      </div>
+      <div class="campo">
+        <label for="vida_util_anios">Vida útil (años)</label>
+        <input type="number" step="0.1" min="0.1" id="vida_util_anios" name="vida_util_anios" required />
+      </div>
+      <div class="campo">
+        <label for="valor_residual">Valor residual (Bs)</label>
+        <input type="number" step="0.01" min="0" id="valor_residual" name="valor_residual" value="0" />
+      </div>
+    </div>
+    <button type="submit">Guardar activo</button>
+  </form>
+</div>
+<% } %>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Listado de activos</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Activo</th><th>Compra</th><th>Costo</th><th>Vida útil</th>
+          <th>Deprec. anual</th><th>Deprec. acumulada</th><th>Valor en libros hoy</th>
+          <% if (puedeEditar) { %><th></th><% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <% activos.forEach(function(a) { %>
+          <tr>
+            <td><%= a.nombre %></td>
+            <td><%= new Date(a.fecha_compra).toLocaleDateString('es-BO') %></td>
+            <td>Bs <%= Number(a.costo).toFixed(2) %></td>
+            <td><%= a.vida_util_anios %> años</td>
+            <td>Bs <%= a.depreciacion_anual.toFixed(2) %></td>
+            <td>Bs <%= a.depreciacion_acumulada.toFixed(2) %></td>
+            <td>Bs <%= a.valor_en_libros.toFixed(2) %></td>
+            <% if (puedeEditar) { %>
+            <td>
+              <form action="/activos-fijos/<%= a.id %>/eliminar" method="POST" onsubmit="return confirm('¿Dar de baja este activo?');">
+                <button type="submit" class="btn-pequeno btn-peligro">Dar de baja</button>
+              </form>
+            </td>
+            <% } %>
+          </tr>
+        <% }) %>
+        <% if (activos.length === 0) { %>
+          <tr><td colspan="8">No hay activos registrados.</td></tr>
+        <% } %>
+      </tbody>
+      <tfoot>
+        <tr style="font-weight:700;">
+          <td>TOTAL</td><td></td>
+          <td>Bs <%= totales.costo.toFixed(2) %></td><td></td>
+          <td>Bs <%= totales.depreciacion_anual.toFixed(2) %></td>
+          <td>Bs <%= totales.depreciacion_acumulada.toFixed(2) %></td>
+          <td>Bs <%= totales.valor_en_libros.toFixed(2) %></td>
+          <% if (puedeEditar) { %><td></td><% } %>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

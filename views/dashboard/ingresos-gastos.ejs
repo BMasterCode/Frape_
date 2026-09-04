@@ -1,0 +1,162 @@
+<% const p = pestanas.find(x => x.clave === 'ingresos_gastos'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Ingresos y Gastos - Frape Club', pestanaActiva: 'ingresos_gastos' }) %>
+
+<h1>Ingresos y Gastos del Día</h1>
+
+<form method="GET" action="/ingresos-gastos" class="fila" style="align-items:flex-end; margin-bottom:16px;">
+  <div class="campo" style="max-width:200px;">
+    <label for="fecha">Fecha</label>
+    <input type="date" id="fecha" name="fecha" value="<%= fecha %>" onchange="this.form.submit()" />
+  </div>
+</form>
+
+<div class="resumen-grid">
+  <div class="resumen-card ingreso">
+    <div>Ingresos del día</div>
+    <div class="valor">Bs <%= Number(totalesDia.ingresos).toFixed(2) %></div>
+  </div>
+  <div class="resumen-card gasto">
+    <div>Gastos del día</div>
+    <div class="valor">Bs <%= Number(totalesDia.gastos).toFixed(2) %></div>
+  </div>
+  <div class="resumen-card ingreso">
+    <div>Ingresos del mes</div>
+    <div class="valor">Bs <%= Number(totalesMes.ingresos).toFixed(2) %></div>
+  </div>
+  <div class="resumen-card gasto">
+    <div>Gastos del mes</div>
+    <div class="valor">Bs <%= Number(totalesMes.gastos).toFixed(2) %></div>
+  </div>
+</div>
+
+<% if (puedeEditar) { %>
+<div class="tarjeta">
+  <h2 style="margin-top:0">Registrar movimiento</h2>
+  <form id="formMovimiento" action="/ingresos-gastos" method="POST">
+    <input type="hidden" name="fecha" value="<%= fecha %>" />
+    <div class="fila">
+      <div class="campo">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo" required onchange="actualizarServicios()">
+          <option value="ingreso">Ingreso</option>
+          <option value="gasto">Gasto</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="servicio">Servicio / Categoría</label>
+        <select id="servicio" name="servicio" required onchange="actualizarCamposServicio()"></select>
+      </div>
+    </div>
+
+    <div class="fila" id="camposJuego" style="display:none;">
+      <div class="campo">
+        <label for="horas">Horas</label>
+        <input type="number" step="0.25" min="0" id="horas" name="horas" oninput="calcularMonto()" />
+      </div>
+      <div class="campo" id="campoPersonas" style="display:none;">
+        <label for="personas">Personas</label>
+        <input type="number" step="1" min="0" id="personas" name="personas" oninput="calcularMonto()" />
+      </div>
+      <div class="campo">
+        <label for="tarifa">Tarifa por hora (Bs)</label>
+        <input type="number" step="0.01" min="0" id="tarifa" name="tarifa" oninput="calcularMonto()" />
+      </div>
+    </div>
+
+    <div class="fila">
+      <div class="campo">
+        <label for="descripcion">Descripción (opcional)</label>
+        <input type="text" id="descripcion" name="descripcion" />
+      </div>
+      <div class="campo">
+        <label for="monto">Monto (Bs)</label>
+        <input type="number" step="0.01" min="0" id="monto" name="monto" required />
+      </div>
+    </div>
+
+    <button type="submit">Guardar movimiento</button>
+  </form>
+</div>
+<% } %>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Movimientos del <%= fecha %></h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr><th>Tipo</th><th>Servicio</th><th>Descripción</th><th>Monto</th><th>Registrado por</th><% if (puedeEditar) { %><th></th><% } %></tr>
+      </thead>
+      <tbody>
+        <% movimientos.forEach(function(m) { %>
+          <tr>
+            <td><span class="badge <%= m.tipo %>"><%= m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto' %></span></td>
+            <td><%= (serviciosIngreso[m.servicio] || serviciosGasto[m.servicio] || m.servicio) %></td>
+            <td><%= m.descripcion || '-' %></td>
+            <td>Bs <%= Number(m.monto).toFixed(2) %></td>
+            <td><%= m.usuario_nombre || '-' %></td>
+            <% if (puedeEditar) { %>
+            <td>
+              <form action="/ingresos-gastos/<%= m.id %>/eliminar" method="POST" onsubmit="return confirm('¿Eliminar este movimiento?');">
+                <button type="submit" class="btn-pequeno btn-peligro">Eliminar</button>
+              </form>
+            </td>
+            <% } %>
+          </tr>
+        <% }) %>
+        <% if (movimientos.length === 0) { %>
+          <tr><td colspan="6">Sin movimientos registrados este día.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const serviciosIngreso = <%- JSON.stringify(serviciosIngreso) %>;
+  const serviciosGasto = <%- JSON.stringify(serviciosGasto) %>;
+  const serviciosConHoras = ['juego_cartas', 'juego_mesa_persona'];
+  const serviciosConPersonas = ['juego_mesa_persona'];
+
+  function actualizarServicios() {
+    const tipo = document.getElementById('tipo').value;
+    const select = document.getElementById('servicio');
+    const lista = tipo === 'ingreso' ? serviciosIngreso : serviciosGasto;
+    select.innerHTML = '';
+    Object.keys(lista).forEach(function (clave) {
+      const opt = document.createElement('option');
+      opt.value = clave;
+      opt.textContent = lista[clave];
+      select.appendChild(opt);
+    });
+    actualizarCamposServicio();
+  }
+
+  function actualizarCamposServicio() {
+    const servicio = document.getElementById('servicio').value;
+    const conHoras = serviciosConHoras.includes(servicio);
+    const conPersonas = serviciosConPersonas.includes(servicio);
+    document.getElementById('camposJuego').style.display = conHoras ? 'flex' : 'none';
+    document.getElementById('campoPersonas').style.display = conPersonas ? 'block' : 'none';
+    calcularMonto();
+  }
+
+  function calcularMonto() {
+    const servicio = document.getElementById('servicio').value;
+    const conHoras = serviciosConHoras.includes(servicio);
+    if (!conHoras) return;
+    const horas = parseFloat(document.getElementById('horas').value) || 0;
+    const tarifa = parseFloat(document.getElementById('tarifa').value) || 0;
+    let monto = horas * tarifa;
+    if (serviciosConPersonas.includes(servicio)) {
+      const personas = parseFloat(document.getElementById('personas').value) || 0;
+      monto = horas * tarifa * personas;
+    }
+    document.getElementById('monto').value = monto.toFixed(2);
+  }
+
+  if (document.getElementById('formMovimiento')) {
+    actualizarServicios();
+  }
+</script>
+
+<%- include('../partials/footer') %>

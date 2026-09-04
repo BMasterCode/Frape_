@@ -1,0 +1,61 @@
+<%- include('../partials/header', { titulo: 'Editar usuario - Frape Club' }) %>
+
+<a href="<%= ADMIN_BASE %>" class="enlace-volver">← Volver a usuarios</a>
+<h1>Editar: <%= usuario.nombre %></h1>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Datos del usuario</h2>
+  <form action="<%= ADMIN_BASE %>/usuarios/<%= usuario.id %>/datos" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="nombre">Nombre completo</label>
+        <input type="text" id="nombre" name="nombre" value="<%= usuario.nombre %>" required />
+      </div>
+      <div class="campo" style="justify-content:center; flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="activo" name="activo" style="width:auto" <%= usuario.activo ? 'checked' : '' %> />
+        <label for="activo" style="margin:0">Usuario activo</label>
+      </div>
+    </div>
+    <button type="submit">Guardar datos</button>
+  </form>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Cambiar contraseña</h2>
+  <form action="<%= ADMIN_BASE %>/usuarios/<%= usuario.id %>/password" method="POST">
+    <div class="campo">
+      <label for="password">Nueva contraseña</label>
+      <input type="password" id="password" name="password" required minlength="4" />
+    </div>
+    <button type="submit">Actualizar contraseña</button>
+  </form>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Permisos por pestaña</h2>
+  <p style="color:var(--color-texto-suave); font-size:0.9rem;">
+    "Ver" da acceso a la pestaña. "Editar" permite además registrar, modificar y eliminar datos en ella.
+  </p>
+  <form action="<%= ADMIN_BASE %>/usuarios/<%= usuario.id %>/permisos" method="POST">
+    <div class="tabla-scroll">
+      <table class="tabla-permisos">
+        <thead>
+          <tr><th>Pestaña</th><th>Ver</th><th>Editar</th></tr>
+        </thead>
+        <tbody>
+          <% pestanas.forEach(function(p) { %>
+            <% const perm = mapaPermisos[p.clave] || {}; %>
+            <tr>
+              <td><%= p.nombre %></td>
+              <td><input type="checkbox" name="ver_<%= p.clave %>" <%= perm.puede_ver ? 'checked' : '' %> /></td>
+              <td><input type="checkbox" name="editar_<%= p.clave %>" <%= perm.puede_editar ? 'checked' : '' %> /></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <button type="submit" style="margin-top:12px">Guardar permisos</button>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

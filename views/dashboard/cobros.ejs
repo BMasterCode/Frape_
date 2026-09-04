@@ -1,0 +1,78 @@
+<% const p = pestanas.find(x => x.clave === 'cobros'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Cobros - Frape Club', pestanaActiva: 'cobros' }) %>
+
+<h1>Cobros de Dividendos</h1>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Saldo pendiente por socio</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Socio</th><th>Ganancia total</th><th>Cobrado</th><th>Pendiente</th></tr></thead>
+      <tbody>
+        <% socios.forEach(function(s) { %>
+          <tr>
+            <td><%= s.nombre %></td>
+            <td>Bs <%= s.ganancia_total.toFixed(2) %></td>
+            <td>Bs <%= s.cobrado.toFixed(2) %></td>
+            <td>Bs <%= s.saldo_pendiente.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (puedeEditar) { %>
+<div class="tarjeta">
+  <h2 style="margin-top:0">Registrar cobro</h2>
+  <form action="/cobros" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="socio_id">Socio</label>
+        <select id="socio_id" name="socio_id" required>
+          <% socios.forEach(function(s) { %>
+            <option value="<%= s.id %>"><%= s.nombre %> (pendiente: Bs <%= s.saldo_pendiente.toFixed(2) %>)</option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" name="fecha" value="<%= new Date().toISOString().slice(0,10) %>" required />
+      </div>
+      <div class="campo">
+        <label for="monto">Monto (Bs)</label>
+        <input type="number" step="0.01" min="0" id="monto" name="monto" required />
+      </div>
+    </div>
+    <div class="campo">
+      <label for="nota">Nota (opcional)</label>
+      <input type="text" id="nota" name="nota" />
+    </div>
+    <button type="submit">Registrar cobro</button>
+  </form>
+</div>
+<% } %>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Historial de cobros</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Fecha</th><th>Socio</th><th>Monto</th><th>Nota</th></tr></thead>
+      <tbody>
+        <% historial.forEach(function(c) { %>
+          <tr>
+            <td><%= new Date(c.fecha).toLocaleDateString('es-BO') %></td>
+            <td><%= c.socio_nombre %></td>
+            <td>Bs <%= Number(c.monto).toFixed(2) %></td>
+            <td><%= c.nota || '-' %></td>
+          </tr>
+        <% }) %>
+        <% if (historial.length === 0) { %>
+          <tr><td colspan="4">Todavía no hay cobros registrados.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

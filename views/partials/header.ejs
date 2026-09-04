@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof titulo !== 'undefined' ? titulo : 'Frape Club' %></title>
+  <link rel="stylesheet" href="/public/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">☕ Frape Club</div>
+
+    <button id="btnMenu" class="hamburguesa" aria-label="Abrir menú" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </header>
+
+  <nav id="menuLateral" class="menu-lateral">
+    <div class="menu-lateral-header">
+      <span>
+        <% if (esAdmin) { %>
+          Administrador
+        <% } else if (usuarioActual) { %>
+          <%= usuarioActual.nombre %>
+        <% } %>
+      </span>
+      <button id="btnCerrarMenu" aria-label="Cerrar menú">✕</button>
+    </div>
+
+    <ul>
+      <% pestanas.forEach(function(p) { %>
+        <li>
+          <a href="/<%= p.clave.replace(/_/g, '-') %>" class="<%= (typeof pestanaActiva !== 'undefined' && pestanaActiva === p.clave) ? 'activo' : '' %>">
+            <%= p.nombre %>
+          </a>
+        </li>
+      <% }) %>
+      <% if (esAdmin) { %>
+        <li><a href="<%= ADMIN_BASE %>">Panel de Admin</a></li>
+      <% } %>
+    </ul>
+
+    <form action="<%= esAdmin ? (ADMIN_BASE + '/logout') : '/logout' %>" method="POST" class="menu-lateral-logout">
+      <button type="submit">Cerrar sesión</button>
+    </form>
+  </nav>
+
+  <div id="overlayMenu" class="overlay-menu"></div>
+
+  <main class="contenido">

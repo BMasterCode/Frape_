@@ -1,0 +1,74 @@
+<%- include('../partials/header', { titulo: 'Historial - Frape Club', pestanaActiva: 'historial' }) %>
+
+<h1>Historial</h1>
+<p style="color:var(--color-texto-suave); font-size:0.85rem; margin-top:-10px;">
+  Se calcula solo a partir de tus movimientos registrados — no hace falta copiar y pegar nada.
+</p>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Historial Semanal</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Semana</th><th>Frappes</th><th>Masitas</th><th>Juegos</th><th>Otros</th>
+          <th>Tot. Ingresos</th><th>Tot. Egresos</th><th>Ut. Variada</th><th>Alquiler</th><th>Ut. Neta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% semanal.forEach(function(s) { %>
+          <tr>
+            <td><%= new Date(s.semana_inicio).toLocaleDateString('es-BO') %></td>
+            <td>Bs <%= Number(s.ingresos_frappes).toFixed(2) %></td>
+            <td>Bs <%= Number(s.ingresos_masitas).toFixed(2) %></td>
+            <td>Bs <%= Number(s.ingresos_juegos).toFixed(2) %></td>
+            <td>Bs <%= Number(s.otros_ingresos).toFixed(2) %></td>
+            <td>Bs <%= Number(s.total_ingresos).toFixed(2) %></td>
+            <td>Bs <%= s.total_egresos.toFixed(2) %></td>
+            <td>Bs <%= s.utilidad_variada.toFixed(2) %></td>
+            <td>Bs <%= s.alquiler.toFixed(2) %></td>
+            <td>Bs <%= s.utilidad_neta.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+        <% if (semanal.length === 0) { %>
+          <tr><td colspan="10">Todavía no hay movimientos registrados.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Historial Mensual</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Mes</th><th>Frappes</th><th>Masitas</th><th>Juegos</th><th>Otros</th>
+          <th>Tot. Ingresos</th><th>Tot. Egresos</th><th>Ut. Variada</th><th>Alquiler</th><th>Ut. Neta</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% mensual.forEach(function(m) { %>
+          <tr>
+            <td><%= m.mes %></td>
+            <td>Bs <%= m.ingresos.frappe.toFixed(2) %></td>
+            <td>Bs <%= m.ingresos.masita.toFixed(2) %></td>
+            <td>Bs <%= (m.ingresos.juego_cartas + m.ingresos.juego_mesa_persona).toFixed(2) %></td>
+            <td>Bs <%= m.ingresos.otro_ingreso.toFixed(2) %></td>
+            <td>Bs <%= m.totalIngresos.toFixed(2) %></td>
+            <td>Bs <%= m.totalEgresos.toFixed(2) %></td>
+            <td>Bs <%= m.utilidadVariada.toFixed(2) %></td>
+            <td>Bs <%= m.alquiler.toFixed(2) %></td>
+            <td>Bs <%= m.utilidadNeta.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+        <% if (mensual.length === 0) { %>
+          <tr><td colspan="10">Todavía no hay movimientos registrados.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

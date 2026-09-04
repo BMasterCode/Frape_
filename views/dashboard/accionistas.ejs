@@ -1,0 +1,100 @@
+<% const p = pestanas.find(x => x.clave === 'accionistas'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Accionistas - Frape Club', pestanaActiva: 'accionistas' }) %>
+
+<h1>Accionistas y Distribución de Ganancias</h1>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Participación y ganancia acumulada</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead>
+        <tr><th>Socio</th><th>Acciones</th><th>% Participación</th><th>Invertido</th><th>Ganancia total</th><th>Cobrado</th><th>Pendiente</th></tr>
+      </thead>
+      <tbody>
+        <% socios.forEach(function(s) { %>
+          <tr>
+            <td>
+              <%= s.nombre %>
+              <% if (s.condicion_especial) { %>
+                <div style="font-size:0.75rem; color:var(--color-texto-suave)"><%= s.condicion_especial %></div>
+              <% } %>
+            </td>
+            <td><%= s.acciones %></td>
+            <td><%= (s.porcentaje * 100).toFixed(1) %>%</td>
+            <td>Bs <%= Number(s.monto_invertido).toFixed(2) %></td>
+            <td>Bs <%= s.ganancia_total.toFixed(2) %></td>
+            <td>Bs <%= s.cobrado.toFixed(2) %></td>
+            <td>Bs <%= s.saldo_pendiente.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:0.8rem; color:var(--color-texto-suave); margin-top:10px;">
+    La ganancia total se calcula automáticamente sumando la utilidad neta de todos los meses registrados, multiplicada por el % de participación de cada socio.
+  </p>
+</div>
+
+<% if (puedeEditar) { %>
+<div class="tarjeta">
+  <h2 style="margin-top:0">Agregar socio</h2>
+  <form action="/accionistas" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required />
+      </div>
+      <div class="campo">
+        <label for="acciones">Acciones</label>
+        <input type="number" step="0.01" min="0" id="acciones" name="acciones" required />
+      </div>
+      <div class="campo">
+        <label for="monto_invertido">Monto invertido (Bs)</label>
+        <input type="number" step="0.01" min="0" id="monto_invertido" name="monto_invertido" />
+      </div>
+    </div>
+    <div class="campo">
+      <label for="condicion_especial">Condición especial (opcional)</label>
+      <input type="text" id="condicion_especial" name="condicion_especial" />
+    </div>
+    <button type="submit">Agregar socio</button>
+  </form>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Reglas de distribución de la utilidad neta</h2>
+  <form action="/accionistas/config" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="pct_alquiler">Alquiler (% de utilidad variada)</label>
+        <input type="number" step="0.01" min="0" max="1" id="pct_alquiler" name="pct_alquiler" value="<%= config.pct_alquiler %>" />
+      </div>
+      <div class="campo">
+        <label for="pct_reinversion">Reinversión</label>
+        <input type="number" step="0.01" min="0" max="1" id="pct_reinversion" name="pct_reinversion" value="<%= config.pct_reinversion %>" />
+      </div>
+      <div class="campo">
+        <label for="pct_dividendos">Dividendos</label>
+        <input type="number" step="0.01" min="0" max="1" id="pct_dividendos" name="pct_dividendos" value="<%= config.pct_dividendos %>" />
+      </div>
+    </div>
+    <div class="fila">
+      <div class="campo">
+        <label for="pct_reserva">Reserva / emergencias</label>
+        <input type="number" step="0.01" min="0" max="1" id="pct_reserva" name="pct_reserva" value="<%= config.pct_reserva %>" />
+      </div>
+      <div class="campo">
+        <label for="pct_deudas">Pago de deudas</label>
+        <input type="number" step="0.01" min="0" max="1" id="pct_deudas" name="pct_deudas" value="<%= config.pct_deudas %>" />
+      </div>
+      <div class="campo">
+        <label for="pct_capital_trabajo">Capital de trabajo</label>
+        <input type="number" step="0.01" min="0" max="1" id="pct_capital_trabajo" name="pct_capital_trabajo" value="<%= config.pct_capital_trabajo %>" />
+      </div>
+    </div>
+    <button type="submit">Guardar reglas</button>
+  </form>
+</div>
+<% } %>
+
+<%- include('../partials/footer') %>

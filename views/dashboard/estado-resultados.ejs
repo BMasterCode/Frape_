@@ -1,0 +1,70 @@
+<%- include('../partials/header', { titulo: 'Estado de Resultados - Frape Club', pestanaActiva: 'estado_resultados' }) %>
+
+<h1>Estado de Resultados</h1>
+
+<form method="GET" action="/estado-resultados" class="fila" style="align-items:flex-end; margin-bottom:16px;">
+  <div class="campo" style="max-width:180px;">
+    <label for="mesSel">Mes</label>
+    <input type="month" id="mesSel" name="mes" value="<%= mes %>" onchange="this.form.submit()" />
+  </div>
+</form>
+<p style="color:var(--color-texto-suave); font-size:0.85rem; margin-top:-10px;">
+  Calculado automáticamente a partir de los movimientos registrados en "Ingresos y Gastos del Día".
+</p>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Ingresos</h2>
+  <div class="tabla-scroll">
+    <table>
+      <tbody>
+        <% Object.keys(serviciosIngreso).forEach(function(k) { %>
+          <tr><td><%= serviciosIngreso[k] %></td><td>Bs <%= estado.ingresos[k].toFixed(2) %></td></tr>
+        <% }) %>
+        <tr style="font-weight:700;"><td>TOTAL INGRESOS</td><td>Bs <%= estado.totalIngresos.toFixed(2) %></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Egresos</h2>
+  <div class="tabla-scroll">
+    <table>
+      <tbody>
+        <% Object.keys(serviciosGasto).forEach(function(k) { %>
+          <tr><td><%= serviciosGasto[k] %></td><td>Bs <%= estado.gastos[k].toFixed(2) %></td></tr>
+        <% }) %>
+        <tr><td>Depreciación del mes</td><td>Bs <%= estado.depreciacionMes.toFixed(2) %></td></tr>
+        <tr style="font-weight:700;"><td>TOTAL EGRESOS</td><td>Bs <%= estado.totalEgresos.toFixed(2) %></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Resultado</h2>
+  <div class="tabla-scroll">
+    <table>
+      <tbody>
+        <tr style="font-weight:700;"><td>Utilidad Variada (Ingresos − Egresos)</td><td>Bs <%= estado.utilidadVariada.toFixed(2) %></td></tr>
+        <tr><td>Alquiler</td><td>Bs <%= estado.alquiler.toFixed(2) %></td></tr>
+        <tr style="font-weight:700; color:var(--color-exito);"><td>UTILIDAD NETA</td><td>Bs <%= estado.utilidadNeta.toFixed(2) %></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Distribución de la utilidad neta</h2>
+  <div class="tabla-scroll">
+    <table>
+      <tbody>
+        <tr><td>Reinversión</td><td>Bs <%= estado.divisiones.reinversion.toFixed(2) %></td></tr>
+        <tr><td>Dividendos</td><td>Bs <%= estado.divisiones.dividendos.toFixed(2) %></td></tr>
+        <tr><td>Reserva / emergencias</td><td>Bs <%= estado.divisiones.reserva.toFixed(2) %></td></tr>
+        <tr><td>Pago de deudas</td><td>Bs <%= estado.divisiones.deudas.toFixed(2) %></td></tr>
+        <tr><td>Capital de trabajo</td><td>Bs <%= estado.divisiones.capital_trabajo.toFixed(2) %></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
