@@ -48,6 +48,21 @@
       </div>
     </div>
 
+    <!-- Frappe / Masita: se elige el producto del menú -->
+    <div class="fila" id="campoProducto" style="display:none;">
+      <div class="campo" style="flex:2;">
+        <label for="producto_id">Producto</label>
+        <select id="producto_id" name="producto_id" onchange="calcularMontoProducto()">
+          <option value="">-- Selecciona --</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="cantidad">Cantidad vendida</label>
+        <input type="number" step="1" min="1" id="cantidad" name="cantidad" value="1" oninput="calcularMontoProducto()" />
+      </div>
+    </div>
+
+    <!-- Juegos: horas / personas / tarifa -->
     <div class="fila" id="camposJuego" style="display:none;">
       <div class="campo">
         <label for="horas">Horas</label>
@@ -84,11 +99,12 @@
   <div class="tabla-scroll">
     <table>
       <thead>
-        <tr><th>Tipo</th><th>Servicio</th><th>Descripción</th><th>Monto</th><th>Registrado por</th><% if (puedeEditar) { %><th></th><% } %></tr>
+        <tr><th>Hora</th><th>Tipo</th><th>Servicio</th><th>Descripción</th><th>Monto</th><th>Registrado por</th><% if (puedeEditar) { %><th></th><% } %></tr>
       </thead>
       <tbody>
         <% movimientos.forEach(function(m) { %>
           <tr>
+            <td><%= new Date(m.creado_en).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) %></td>
             <td><span class="badge <%= m.tipo %>"><%= m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto' %></span></td>
             <td><%= (serviciosIngreso[m.servicio] || serviciosGasto[m.servicio] || m.servicio) %></td>
             <td><%= m.descripcion || '-' %></td>
@@ -104,7 +120,7 @@
           </tr>
         <% }) %>
         <% if (movimientos.length === 0) { %>
-          <tr><td colspan="6">Sin movimientos registrados este día.</td></tr>
+          <tr><td colspan="7">Sin movimientos registrados este día.</td></tr>
         <% } %>
       </tbody>
     </table>
@@ -116,6 +132,8 @@
   const serviciosGasto = <%- JSON.stringify(serviciosGasto) %>;
   const serviciosConHoras = ['juego_cartas', 'juego_mesa_persona'];
   const serviciosConPersonas = ['juego_mesa_persona'];
+  const serviciosConProducto = ['frappe', 'masita'];
+  const menu = <%- JSON.stringify(menu.map(m => ({ id: m.id, nombre: m.nombre, categoria: m.categoria, precio_venta: Number(m.precio_venta) }))) %>;
 
   function actualizarServicios() {
     const tipo = document.getElementById('tipo').value;
@@ -131,13 +149,43 @@
     actualizarCamposServicio();
   }
 
+  function actualizarCamposProducto() {
+    const servicio = document.getElementById('servicio').value;
+    const select = document.getElementById('producto_id');
+    select.innerHTML = '<option value="">-- Selecciona --</option>';
+    menu.filter(function (m) { return m.categoria === servicio; }).forEach(function (m) {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.dataset.precio = m.precio_venta;
+      opt.textContent = m.nombre + ' (Bs ' + m.precio_venta.toFixed(2) + ')';
+      select.appendChild(opt);
+    });
+  }
+
+  function calcularMontoProducto() {
+    const select = document.getElementById('producto_id');
+    const opt = select.options[select.selectedIndex];
+    const precio = opt ? parseFloat(opt.dataset.precio) || 0 : 0;
+    const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+    document.getElementById('monto').value = (precio * cantidad).toFixed(2);
+  }
+
   function actualizarCamposServicio() {
     const servicio = document.getElementById('servicio').value;
     const conHoras = serviciosConHoras.includes(servicio);
     const conPersonas = serviciosConPersonas.includes(servicio);
+    const conProducto = serviciosConProducto.includes(servicio);
+
     document.getElementById('camposJuego').style.display = conHoras ? 'flex' : 'none';
     document.getElementById('campoPersonas').style.display = conPersonas ? 'block' : 'none';
-    calcularMonto();
+    document.getElementById('campoProducto').style.display = conProducto ? 'flex' : 'none';
+
+    if (conProducto) {
+      actualizarCamposProducto();
+      calcularMontoProducto();
+    } else {
+      calcularMonto();
+    }
   }
 
   function calcularMonto() {

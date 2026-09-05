@@ -1,0 +1,84 @@
+<% const p = pestanas.find(x => x.clave === 'distribucion_utilidad'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Distribución de Utilidad - Frape Club', pestanaActiva: 'distribucion_utilidad' }) %>
+
+<h1>Cobro de Distribución de Utilidad</h1>
+<p style="color:var(--color-texto-suave); font-size:0.9rem; margin-top:-8px;">
+  Aquí se administra todo lo que NO son dividendos: reinversión, reserva, pago de deudas y capital
+  de trabajo. Los dividendos de los socios se manejan en la pestaña "Cobros de Dividendos".
+</p>
+
+<% const nombresCategoria = { reinversion: 'Reinversión', reserva: 'Reserva / emergencias', deudas: 'Pago de deudas', capital_trabajo: 'Capital de trabajo' }; %>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Por categoría</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Categoría</th><th>Acumulado</th><th>Usado</th><th>Pendiente</th></tr></thead>
+      <tbody>
+        <% categorias.forEach(function(c) { %>
+          <tr>
+            <td><%= nombresCategoria[c.categoria] %></td>
+            <td>Bs <%= c.acumulado.toFixed(2) %></td>
+            <td>Bs <%= c.usado.toFixed(2) %></td>
+            <td>Bs <%= c.pendiente.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (puedeEditar) { %>
+<div class="tarjeta">
+  <h2 style="margin-top:0">Registrar uso</h2>
+  <form action="/distribucion-utilidad" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="categoria">Categoría</label>
+        <select id="categoria" name="categoria" required>
+          <% categorias.forEach(function(c) { %>
+            <option value="<%= c.categoria %>"><%= nombresCategoria[c.categoria] %> (pendiente: Bs <%= c.pendiente.toFixed(2) %>)</option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="fecha">Fecha</label>
+        <input type="date" id="fecha" name="fecha" value="<%= new Date().toISOString().slice(0,10) %>" required />
+      </div>
+      <div class="campo">
+        <label for="monto">Monto (Bs)</label>
+        <input type="number" step="0.01" min="0" id="monto" name="monto" required />
+      </div>
+    </div>
+    <div class="campo">
+      <label for="nota">Nota (opcional)</label>
+      <input type="text" id="nota" name="nota" placeholder="Ej: Compra de licuadora nueva" />
+    </div>
+    <button type="submit">Registrar</button>
+  </form>
+</div>
+<% } %>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Historial</h2>
+  <div class="tabla-scroll">
+    <table>
+      <thead><tr><th>Fecha</th><th>Categoría</th><th>Monto</th><th>Nota</th></tr></thead>
+      <tbody>
+        <% historial.forEach(function(h) { %>
+          <tr>
+            <td><%= new Date(h.fecha).toLocaleDateString('es-BO') %></td>
+            <td><%= nombresCategoria[h.categoria] %></td>
+            <td>Bs <%= Number(h.monto).toFixed(2) %></td>
+            <td><%= h.nota || '-' %></td>
+          </tr>
+        <% }) %>
+        <% if (historial.length === 0) { %>
+          <tr><td colspan="4">Todavía no hay usos registrados.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

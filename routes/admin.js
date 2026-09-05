@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const pool = require('../db/pool');
 const { ADMIN_BASE } = require('../lib/config');
+const { encriptar, desencriptar } = require('../lib/crypto');
 const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -18,9 +19,15 @@ router.post('/usuarios', async (req, res) => {
   const { username, password, nombre } = req.body;
   try {
     const hash = await bcrypt.hash(password, 10);
+    let visible = null;
+    try {
+      visible = encriptar(password);
+    } catch (e) {
+      console.warn('⚠️ ', e.message);
+    }
     const r = await pool.query(
-      'INSERT INTO usuarios (username, password_hash, nombre) VALUES ($1,$2,$3) RETURNING id',
-      [username, hash, nombre]
+      'INSERT INTO usuarios (username, password_hash, password_visible, nombre) VALUES ($1,$2,$3,$4) RETURNING id',
+      [username, hash, visible, nombre]
     );
     const usuarioId = r.rows[0].id;
 
@@ -57,24 +64,57 @@ router.get('/usuarios/:id', async (req, res) => {
   const mapaPermisos = {};
   permisos.rows.forEach((p) => (mapaPermisos[p.pestana_clave] = p));
 
+  let passwordVisible = null;
+  try {
+    passwordVisible = desencriptar(usuario.rows[0].password_visible);
+  } catch (e) {
+    console.warn('⚠️ ', e.message);
+  }
+
   res.render('admin/usuario-editar', {
     usuario: usuario.rows[0],
     pestanas: pestanas.rows,
     mapaPermisos,
+    passwordVisible,
     mensaje: null,
+    error: null,
   });
 });
 
 // ---------- Actualizar datos básicos del usuario (nombre / activo) ----------
 router.post('/usuarios/:id/datos', async (req, res) => {
   const { id } = req.params;
-  const { nombre, activo } = req.body;
-  await pool.query('UPDATE usuarios SET nombre = $1, activo = $2 WHERE id = $3', [
-    nombre,
-    activo === 'on',
-    id,
-  ]);
-  res.redirect(`${ADMIN_BASE}/usuarios/${id}`);
+  const { nombre, username, activo } = req.body;
+  try {
+    await pool.query('UPDATE usuarios SET nombre = $1, username = $2, activo = $3 WHERE id = $4', [
+      nombre,
+      username,
+      activo === 'on',
+      id,
+    ]);
+    res.redirect(`${ADMIN_BASE}/usuarios/${id}`);
+  } catch (err) {
+    console.error(err);
+    const usuario = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
+    const pestanas = await pool.query('SELECT * FROM pestanas ORDER BY orden');
+    const permisos = await pool.query('SELECT * FROM permisos WHERE usuario_id = $1', [id]);
+    const mapaPermisos = {};
+    permisos.rows.forEach((p) => (mapaPermisos[p.pestana_clave] = p));
+    let passwordVisible = null;
+    try {
+      passwordVisible = desencriptar(usuario.rows[0].password_visible);
+    } catch (e) {
+      // sin clave configurada, seguimos sin mostrarla
+    }
+    res.render('admin/usuario-editar', {
+      usuario: usuario.rows[0],
+      pestanas: pestanas.rows,
+      mapaPermisos,
+      passwordVisible,
+      mensaje: null,
+      error: 'No se pudo actualizar: ese nombre de usuario ya existe.',
+    });
+  }
 });
 
 // ---------- Cambiar contraseña del usuario ----------
@@ -82,7 +122,17 @@ router.post('/usuarios/:id/password', async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
   const hash = await bcrypt.hash(password, 10);
-  await pool.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [hash, id]);
+  let visible = null;
+  try {
+    visible = encriptar(password);
+  } catch (e) {
+    console.warn('⚠️ ', e.message);
+  }
+  await pool.query('UPDATE usuarios SET password_hash = $1, password_visible = $2 WHERE id = $3', [
+    hash,
+    visible,
+    id,
+  ]);
   res.redirect(`${ADMIN_BASE}/usuarios/${id}`);
 });
 

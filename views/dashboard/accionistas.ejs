@@ -19,7 +19,7 @@
                 <div style="font-size:0.75rem; color:var(--color-texto-suave)"><%= s.condicion_especial %></div>
               <% } %>
             </td>
-            <td><%= s.acciones %></td>
+            <td><%= fmt(s.acciones) %></td>
             <td><%= (s.porcentaje * 100).toFixed(1) %>%</td>
             <td>Bs <%= Number(s.monto_invertido).toFixed(2) %></td>
             <td>Bs <%= s.ganancia_total.toFixed(2) %></td>
@@ -31,7 +31,10 @@
     </table>
   </div>
   <p style="font-size:0.8rem; color:var(--color-texto-suave); margin-top:10px;">
-    La ganancia total se calcula automáticamente sumando la utilidad neta de todos los meses registrados, multiplicada por el % de participación de cada socio.
+    La ganancia total es la parte de <strong>dividendos</strong> (no toda la utilidad neta): se suma
+    el dividendo de cada mes registrado y se multiplica por el % de participación de cada socio.
+    El resto de la utilidad neta (reinversión, reserva, deudas, capital de trabajo) se administra
+    en "Cobro de Distribución de Utilidad".
   </p>
 </div>
 

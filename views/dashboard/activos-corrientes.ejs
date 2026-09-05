@@ -1,0 +1,148 @@
+<% const p = pestanas.find(x => x.clave === 'activos_corrientes'); const puedeEditar = p && p.puede_editar; %>
+<%- include('../partials/header', { titulo: 'Activos Corrientes - Frape Club', pestanaActiva: 'activos_corrientes' }) %>
+
+<h1>Activos Corrientes (Inventario)</h1>
+<p style="color:var(--color-texto-suave); font-size:0.9rem; margin-top:-8px;">
+  El valor total de aquí alimenta directamente el Balance General — no hace falta escribirlo dos veces.
+</p>
+
+<div class="resumen-grid" style="grid-template-columns:1fr;">
+  <div class="resumen-card ingreso">
+    <div>Valor total del inventario</div>
+    <div class="valor">Bs <%= totalValor.toFixed(2) %></div>
+  </div>
+</div>
+
+<% if (puedeEditar) { %>
+<div class="tarjeta">
+  <h2 style="margin-top:0">Agregar producto / insumo nuevo</h2>
+  <p style="font-size:0.85rem; color:var(--color-texto-suave); margin-top:-6px;">
+    Pon cuánto pagaste en total y cuánta cantidad compraste — el precio por unidad se calcula solo.
+  </p>
+  <form action="/activos-corrientes" method="POST">
+    <div class="fila">
+      <div class="campo">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Leche, Vasos, Café en grano..." />
+      </div>
+      <div class="campo">
+        <label for="unidad">Unidad</label>
+        <select id="unidad" name="unidad" required>
+          <option value="unidad">Unidad</option>
+          <option value="g">Gramos (g)</option>
+          <option value="kg">Kilogramos (kg)</option>
+          <option value="ml">Mililitros (ml)</option>
+          <option value="l">Litros (l)</option>
+        </select>
+      </div>
+    </div>
+    <div class="fila">
+      <div class="campo">
+        <label for="cantidad">Cantidad comprada</label>
+        <input type="number" step="0.001" min="0.001" id="cantidad" name="cantidad" required oninput="calcularPrecioNuevo()" />
+      </div>
+      <div class="campo">
+        <label for="costo_total">Costo total de la compra (Bs)</label>
+        <input type="number" step="0.01" min="0" id="costo_total" name="costo_total" required oninput="calcularPrecioNuevo()" />
+      </div>
+      <div class="campo">
+        <label>Precio por unidad (calculado)</label>
+        <input type="text" id="precioCalculado" readonly value="Bs 0.00" />
+      </div>
+    </div>
+    <div class="campo" style="max-width:260px;">
+      <label for="stock_minimo">Aviso de stock bajo (opcional)</label>
+      <input type="number" step="0.001" min="0" id="stock_minimo" name="stock_minimo" value="0" />
+    </div>
+    <button type="submit">Guardar</button>
+  </form>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Registrar compra / reposición de un insumo existente</h2>
+  <p style="font-size:0.85rem; color:var(--color-texto-suave); margin-top:-6px;">
+    El precio por unidad se recalcula como costo promedio ponderado con el stock que ya tenías.
+  </p>
+  <form action="/activos-corrientes/agregar-stock" method="POST">
+    <div class="fila">
+      <div class="campo" style="flex:2;">
+        <label for="inventario_id">Producto</label>
+        <select id="inventario_id" name="inventario_id" required>
+          <% inventario.forEach(function(i) { %>
+            <option value="<%= i.id %>"><%= i.nombre %> (stock actual: <%= fmt(i.stock) %> <%= i.unidad %>)</option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="cantidad2">Cantidad comprada</label>
+        <input type="number" step="0.001" min="0.001" id="cantidad2" name="cantidad" required />
+      </div>
+      <div class="campo">
+        <label for="costo_total2">Costo total de la compra (Bs)</label>
+        <input type="number" step="0.01" min="0" id="costo_total2" name="costo_total" required />
+      </div>
+    </div>
+    <button type="submit">Agregar al stock</button>
+  </form>
+</div>
+<% } %>
+
+<div class="buscador">
+  <input type="text" id="buscarInventario" placeholder="Buscar por nombre..." />
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Inventario</h2>
+  <div class="tabla-scroll">
+    <table id="tablaInventario">
+      <thead>
+        <tr><th>Producto</th><th>Stock</th><th>Precio unitario</th><th>Valor total</th><th>Aviso stock bajo</th><% if (puedeEditar) { %><th></th><% } %></tr>
+      </thead>
+      <tbody>
+        <% inventario.forEach(function(i) { %>
+          <tr data-nombre="<%= i.nombre.toLowerCase() %>" style="<%= i.bajo_stock ? 'background:#fde0e8;' : '' %>">
+            <td>
+              <%= i.nombre %>
+              <% if (i.bajo_stock) { %><span class="badge gasto" style="margin-left:6px;">Se está acabando</span><% } %>
+            </td>
+            <td><%= fmt(i.stock) %> <%= i.unidad %></td>
+            <td>Bs <%= Number(i.precio_unitario).toFixed(2) %></td>
+            <td>Bs <%= i.valor_total.toFixed(2) %></td>
+            <td>
+              <% if (puedeEditar) { %>
+                <form action="/activos-corrientes/<%= i.id %>/stock-minimo" method="POST" class="fila" style="align-items:center; gap:6px; flex-wrap:nowrap;">
+                  <input type="number" step="0.001" min="0" name="stock_minimo" value="<%= Number(i.stock_minimo) %>" style="width:80px;" />
+                  <button type="submit" class="btn-pequeno btn-secundario">Guardar</button>
+                </form>
+              <% } else { %>
+                <%= fmt(i.stock_minimo) %>
+              <% } %>
+            </td>
+            <% if (puedeEditar) { %>
+            <td>
+              <form action="/activos-corrientes/<%= i.id %>/eliminar" method="POST" onsubmit="return confirm('¿Quitar este producto del inventario?');">
+                <button type="submit" class="btn-pequeno btn-peligro">Quitar</button>
+              </form>
+            </td>
+            <% } %>
+          </tr>
+        <% }) %>
+        <% if (inventario.length === 0) { %>
+          <tr><td colspan="6">No hay productos en el inventario todavía.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function calcularPrecioNuevo() {
+    const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+    const costo = parseFloat(document.getElementById('costo_total').value) || 0;
+    const precio = cantidad > 0 ? costo / cantidad : 0;
+    document.getElementById('precioCalculado').value = 'Bs ' + precio.toFixed(2);
+  }
+  activarBuscador('buscarInventario', 'tablaInventario');
+</script>
+
+<%- include('../partials/footer') %>

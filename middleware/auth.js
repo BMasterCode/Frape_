@@ -14,8 +14,19 @@ function requireAdmin(req, res, next) {
 }
 
 // --- Carga todas las pestañas + los permisos del usuario en sesión ---
+// Convierte los números que vienen de Postgres (ej: "3.000") a un formato
+// legible: sin decimales de sobra, y con coma/punto según convención
+// hispana (para no confundir "3.000" con "tres mil" cuando en realidad es 3).
+function formatearNumero(valor, maximoDecimales = 3) {
+  const n = Number(valor);
+  if (Number.isNaN(n)) return '0';
+  return n.toLocaleString('es-BO', { maximumFractionDigits: maximoDecimales });
+}
+
 async function cargarPestanasYPermisos(req, res, next) {
   try {
+    res.locals.fmt = formatearNumero;
+
     const pestanas = await pool.query('SELECT * FROM pestanas ORDER BY orden');
 
     if (req.session.esAdmin) {

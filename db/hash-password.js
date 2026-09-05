@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 
 const plain = process.argv[2];
 if (!plain) {
-  console.error('Uso: node db/hash-password.js "lenBis7"');
+  console.error('Uso: node db/hash-password.js "tu-contraseña"');
   process.exit(1);
 }
 

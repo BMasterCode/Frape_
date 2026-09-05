@@ -41,8 +41,11 @@
 
 <div class="tarjeta">
   <h2 style="margin-top:0">Listado de activos</h2>
+  <div class="buscador">
+    <input type="text" id="buscarActivoFijo" placeholder="Buscar por nombre..." />
+  </div>
   <div class="tabla-scroll">
-    <table>
+    <table id="tablaActivosFijos">
       <thead>
         <tr>
           <th>Activo</th><th>Compra</th><th>Costo</th><th>Vida útil</th>
@@ -52,11 +55,11 @@
       </thead>
       <tbody>
         <% activos.forEach(function(a) { %>
-          <tr>
+          <tr data-nombre="<%= a.nombre.toLowerCase() %>">
             <td><%= a.nombre %></td>
             <td><%= new Date(a.fecha_compra).toLocaleDateString('es-BO') %></td>
             <td>Bs <%= Number(a.costo).toFixed(2) %></td>
-            <td><%= a.vida_util_anios %> años</td>
+            <td><%= fmt(a.vida_util_anios) %> años</td>
             <td>Bs <%= a.depreciacion_anual.toFixed(2) %></td>
             <td>Bs <%= a.depreciacion_acumulada.toFixed(2) %></td>
             <td>Bs <%= a.valor_en_libros.toFixed(2) %></td>
@@ -86,5 +89,9 @@
     </table>
   </div>
 </div>
+
+<script>
+  activarBuscador('buscarActivoFijo', 'tablaActivosFijos');
+</script>
 
 <%- include('../partials/footer') %>

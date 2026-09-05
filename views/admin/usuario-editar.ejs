@@ -3,6 +3,8 @@
 <a href="<%= ADMIN_BASE %>" class="enlace-volver">← Volver a usuarios</a>
 <h1>Editar: <%= usuario.nombre %></h1>
 
+<% if (error) { %><div class="mensaje-error"><%= error %></div><% } %>
+
 <div class="tarjeta">
   <h2 style="margin-top:0">Datos del usuario</h2>
   <form action="<%= ADMIN_BASE %>/usuarios/<%= usuario.id %>/datos" method="POST">
@@ -11,6 +13,10 @@
         <label for="nombre">Nombre completo</label>
         <input type="text" id="nombre" name="nombre" value="<%= usuario.nombre %>" required />
       </div>
+      <div class="campo">
+        <label for="username">Usuario (para iniciar sesión)</label>
+        <input type="text" id="username" name="username" value="<%= usuario.username %>" required />
+      </div>
       <div class="campo" style="justify-content:center; flex-direction:row; align-items:center; gap:8px;">
         <input type="checkbox" id="activo" name="activo" style="width:auto" <%= usuario.activo ? 'checked' : '' %> />
         <label for="activo" style="margin:0">Usuario activo</label>
@@ -18,6 +24,28 @@
     </div>
     <button type="submit">Guardar datos</button>
   </form>
+</div>
+
+<div class="tarjeta">
+  <h2 style="margin-top:0">Contraseña actual</h2>
+  <% if (passwordVisible) { %>
+    <div class="campo">
+      <label>Contraseña</label>
+      <div class="fila" style="align-items:center;">
+        <input type="password" id="passwordActual" value="<%= passwordVisible %>" readonly style="flex:1;" />
+        <button type="button" class="btn-secundario btn-pequeno" onclick="
+          const c = document.getElementById('passwordActual');
+          c.type = c.type === 'password' ? 'text' : 'password';
+          this.textContent = c.type === 'password' ? 'Mostrar' : 'Ocultar';
+        ">Mostrar</button>
+      </div>
+    </div>
+  <% } else { %>
+    <p style="color:var(--color-texto-suave); font-size:0.9rem;">
+      No se pudo leer la contraseña (falta configurar <code>ENCRYPTION_KEY</code> en el servidor,
+      o esta contraseña se creó antes de configurarla). Puedes ponerle una nueva abajo.
+    </p>
+  <% } %>
 </div>
 
 <div class="tarjeta">

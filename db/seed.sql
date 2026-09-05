@@ -35,3 +35,18 @@ INSERT INTO activos_fijos (nombre, fecha_compra, costo, vida_util_anios, valor_r
   ('Juegos de mesa (sets)', '2026-08-01', 200, 5, 0),
   ('Mobiliario / vitrina', '2026-08-15', 500, 8, 50)
 ON CONFLICT DO NOTHING;
+
+-- Inventario de ejemplo (Activos Corrientes) — edítalo o bórralo desde la app
+INSERT INTO inventario (nombre, unidad, stock, precio_unitario, stock_minimo) VALUES
+  ('Café en grano', 'kg', 5, 80, 1),
+  ('Leche', 'l', 10, 10, 2),
+  ('Hielo', 'kg', 20, 3, 5),
+  ('Vasos descartables', 'unidad', 200, 0.80, 50),
+  ('Masitas compradas (paquete)', 'unidad', 30, 5, 5)
+ON CONFLICT DO NOTHING;
+
+-- Menú de ejemplo — bórralo o edítalo desde la app
+-- (la receta se arma desde la pestaña "Menú", aquí solo dejamos el producto base)
+INSERT INTO menu_productos (nombre, categoria, modo, precio_venta) VALUES
+  ('Frappe de café', 'frappe', 'elaborado', 12)
+ON CONFLICT DO NOTHING;
