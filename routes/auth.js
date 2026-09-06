@@ -7,7 +7,12 @@ const router = express.Router();
 
 // ---------- LOGIN DE USUARIOS NORMALES ----------
 router.get('/login', (req, res) => {
-  if (req.session.usuario) return res.redirect('/');
+  // Si ya hay una sesión abierta pero la persona quiere ir a /login de todos
+  // modos (por ejemplo porque quedó "atascada" sin permisos, o quiere entrar
+  // con otra cuenta), la cerramos primero para no quedar en un bucle.
+  if (req.session.usuario || req.session.esAdmin) {
+    return req.session.destroy(() => res.render('login', { error: null }));
+  }
   res.render('login', { error: null });
 });
 

@@ -43,7 +43,7 @@
       </div>
       <div class="campo">
         <label for="fecha">Fecha</label>
-        <input type="date" id="fecha" name="fecha" value="<%= new Date().toISOString().slice(0,10) %>" required />
+        <input type="date" id="fecha" name="fecha" value="<%= hoy %>" required />
       </div>
       <div class="campo">
         <label for="monto">Monto (Bs)</label>
@@ -67,7 +67,7 @@
       <tbody>
         <% historial.forEach(function(h) { %>
           <tr>
-            <td><%= new Date(h.fecha).toLocaleDateString('es-BO') %></td>
+            <td><%= new Date(h.fecha).toLocaleDateString('es-BO', { timeZone: 'UTC' }) %></td>
             <td><%= nombresCategoria[h.categoria] %></td>
             <td>Bs <%= Number(h.monto).toFixed(2) %></td>
             <td><%= h.nota || '-' %></td>

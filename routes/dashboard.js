@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../db/pool');
 const { requierePermisoVer, requierePermisoEditar } = require('../middleware/auth');
 const calc = require('../lib/calculos');
+const { fechaHoyBolivia, mesActualBolivia } = require('../lib/fecha');
 
 const router = express.Router();
 
@@ -11,12 +12,14 @@ router.get('/', (req, res) => res.redirect('/ingresos-gastos'));
 // INGRESOS Y GASTOS DEL DÍA
 // ============================================================
 router.get('/ingresos-gastos', requierePermisoVer('ingresos_gastos'), async (req, res) => {
-  const fecha = req.query.fecha || new Date().toISOString().slice(0, 10);
+  const fecha = req.query.fecha || fechaHoyBolivia();
   const mes = fecha.slice(0, 7);
 
   const movimientosDia = await pool.query(
-    `SELECT m.*, u.nombre AS usuario_nombre FROM movimientos m
+    `SELECT m.*, u.nombre AS usuario_nombre, mp.nombre AS producto_nombre
+     FROM movimientos m
      LEFT JOIN usuarios u ON u.id = m.usuario_id
+     LEFT JOIN menu_productos mp ON mp.id = m.producto_id
      WHERE m.fecha = $1 ORDER BY m.creado_en DESC`,
     [fecha]
   );
@@ -292,7 +295,7 @@ router.get('/cobros', requierePermisoVer('cobros'), async (req, res) => {
     `SELECT c.*, s.nombre AS socio_nombre FROM cobros_dividendos c
      JOIN socios s ON s.id = c.socio_id ORDER BY c.fecha DESC LIMIT 50`
   );
-  res.render('dashboard/cobros', { socios, historial: historial.rows });
+  res.render('dashboard/cobros', { socios, historial: historial.rows, hoy: fechaHoyBolivia() });
 });
 
 router.post('/cobros', requierePermisoEditar('cobros'), async (req, res) => {
@@ -313,7 +316,7 @@ router.get('/distribucion-utilidad', requierePermisoVer('distribucion_utilidad')
   const historial = await pool.query(
     `SELECT * FROM distribucion_usos ORDER BY fecha DESC, creado_en DESC LIMIT 50`
   );
-  res.render('dashboard/distribucion-utilidad', { categorias, historial: historial.rows });
+  res.render('dashboard/distribucion-utilidad', { categorias, historial: historial.rows, hoy: fechaHoyBolivia() });
 });
 
 router.post('/distribucion-utilidad', requierePermisoEditar('distribucion_utilidad'), async (req, res) => {
@@ -329,7 +332,7 @@ router.post('/distribucion-utilidad', requierePermisoEditar('distribucion_utilid
 // BALANCE GENERAL
 // ============================================================
 router.get('/balance-general', requierePermisoVer('balance_general'), async (req, res) => {
-  const mes = req.query.mes || new Date().toISOString().slice(0, 7);
+  const mes = req.query.mes || mesActualBolivia();
   let balance = await pool.query('SELECT * FROM balance_general WHERE mes = $1', [mes]);
   if (!balance.rows[0]) {
     balance = {
@@ -378,7 +381,7 @@ router.post('/balance-general', requierePermisoEditar('balance_general'), async 
 // ESTADO DE RESULTADOS
 // ============================================================
 router.get('/estado-resultados', requierePermisoVer('estado_resultados'), async (req, res) => {
-  const mes = req.query.mes || new Date().toISOString().slice(0, 7);
+  const mes = req.query.mes || mesActualBolivia();
   const estado = await calc.obtenerEstadoResultados(mes);
   res.render('dashboard/estado-resultados', {
     estado,

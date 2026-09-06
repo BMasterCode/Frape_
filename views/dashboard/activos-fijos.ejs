@@ -57,7 +57,7 @@
         <% activos.forEach(function(a) { %>
           <tr data-nombre="<%= a.nombre.toLowerCase() %>">
             <td><%= a.nombre %></td>
-            <td><%= new Date(a.fecha_compra).toLocaleDateString('es-BO') %></td>
+            <td><%= new Date(a.fecha_compra).toLocaleDateString('es-BO', { timeZone: 'UTC' }) %></td>
             <td>Bs <%= Number(a.costo).toFixed(2) %></td>
             <td><%= fmt(a.vida_util_anios) %> años</td>
             <td>Bs <%= a.depreciacion_anual.toFixed(2) %></td>

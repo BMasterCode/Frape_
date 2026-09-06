@@ -18,7 +18,7 @@
       <tbody>
         <% semanal.forEach(function(s) { %>
           <tr>
-            <td><%= new Date(s.semana_inicio).toLocaleDateString('es-BO') %></td>
+            <td><%= new Date(s.semana_inicio).toLocaleDateString('es-BO', { timeZone: 'UTC' }) %></td>
             <td>Bs <%= Number(s.ingresos_frappes).toFixed(2) %></td>
             <td>Bs <%= Number(s.ingresos_masitas).toFixed(2) %></td>
             <td>Bs <%= Number(s.ingresos_juegos).toFixed(2) %></td>

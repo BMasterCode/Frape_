@@ -99,14 +99,16 @@
   <div class="tabla-scroll">
     <table>
       <thead>
-        <tr><th>Hora</th><th>Tipo</th><th>Servicio</th><th>Descripción</th><th>Monto</th><th>Registrado por</th><% if (puedeEditar) { %><th></th><% } %></tr>
+        <tr><th>Hora</th><th>Tipo</th><th>Servicio</th><th>Producto</th><th>Cantidad</th><th>Descripción</th><th>Monto</th><th>Registrado por</th><% if (puedeEditar) { %><th></th><% } %></tr>
       </thead>
       <tbody>
         <% movimientos.forEach(function(m) { %>
           <tr>
-            <td><%= new Date(m.creado_en).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) %></td>
+            <td><%= new Date(m.creado_en).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz' }) %></td>
             <td><span class="badge <%= m.tipo %>"><%= m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto' %></span></td>
             <td><%= (serviciosIngreso[m.servicio] || serviciosGasto[m.servicio] || m.servicio) %></td>
+            <td><%= m.producto_nombre || '-' %></td>
+            <td><%= m.cantidad ? fmt(m.cantidad) : '-' %></td>
             <td><%= m.descripcion || '-' %></td>
             <td>Bs <%= Number(m.monto).toFixed(2) %></td>
             <td><%= m.usuario_nombre || '-' %></td>
@@ -120,7 +122,7 @@
           </tr>
         <% }) %>
         <% if (movimientos.length === 0) { %>
-          <tr><td colspan="7">Sin movimientos registrados este día.</td></tr>
+          <tr><td colspan="9">Sin movimientos registrados este día.</td></tr>
         <% } %>
       </tbody>
     </table>
