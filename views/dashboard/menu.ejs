@@ -3,8 +3,8 @@
 
 <h1>Menú de Productos</h1>
 <p style="color:var(--color-texto-suave); font-size:0.9rem; margin-top:-8px;">
-  Define aquí cada frappe/refresco y masita/snack. Al venderlos en "Ingresos y Gastos" el sistema
-  descuenta solo los insumos del inventario.
+  Define aquí cada frappe/refresco, masita/snack y juego. Al vender un frappe o masita el sistema
+  descuenta los insumos del inventario; los juegos son un servicio, no gastan inventario.
 </p>
 
 <% if (puedeEditar) { %>
@@ -13,23 +13,28 @@
   <form action="/menu" method="POST" id="formMenu">
     <div class="fila">
       <div class="campo">
-        <label for="nombre">Nombre del producto</label>
-        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Frappe de café" />
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Frappe de café, o UNO, Catan..." />
       </div>
       <div class="campo">
         <label for="categoria">Categoría</label>
-        <select id="categoria" name="categoria" required>
+        <select id="categoria" name="categoria" required onchange="cambiarCategoria()">
           <option value="frappe">Frappe / Refresco</option>
           <option value="masita">Masita / Snack</option>
+          <option value="juego_cartas">Juego de cartas (por hora/juego)</option>
+          <option value="juego_mesa_persona">Juego de mesa (por hora/persona)</option>
         </select>
-      </div>
-      <div class="campo">
-        <label for="precio_venta">Precio de venta (Bs)</label>
-        <input type="number" step="0.01" min="0" id="precio_venta" name="precio_venta" required />
       </div>
     </div>
 
-    <div class="campo">
+    <div class="fila" id="campoPrecioVenta">
+      <div class="campo">
+        <label for="precio_venta">Precio de venta (Bs)</label>
+        <input type="number" step="0.01" min="0" id="precio_venta" name="precio_venta" value="0" />
+      </div>
+    </div>
+
+    <div class="campo" id="campoModo">
       <label for="modo">¿Cómo se obtiene?</label>
       <select id="modo" name="modo" required onchange="cambiarModo()">
         <option value="elaborado">Se elabora aquí (usa insumos del inventario)</option>
@@ -58,7 +63,12 @@
       <button type="button" class="btn-secundario btn-pequeno" onclick="agregarFilaReceta()">+ Agregar insumo</button>
     </div>
 
-    <button type="submit" style="margin-top:16px;">Guardar producto</button>
+    <p id="notaJuego" style="display:none; font-size:0.85rem; color:var(--color-texto-suave);">
+      Los juegos no usan insumos del inventario ni un precio fijo: el monto se calcula por
+      horas/tarifa (y personas, si aplica) al registrar el ingreso en "Ingresos y Gastos".
+    </p>
+
+    <button type="submit" style="margin-top:16px;">Guardar</button>
   </form>
 </div>
 <% } %>
@@ -67,74 +77,95 @@
   <input type="text" id="buscarMenu" placeholder="Buscar por nombre..." />
 </div>
 
-<div class="tarjeta">
-  <h2 style="margin-top:0">Frappes / Refrescos</h2>
-  <div class="tabla-scroll">
-    <table id="tablaMenuFrappe">
-      <thead><tr><th>Producto</th><th>Precio</th><th>Origen</th><th>Detalle</th><% if (puedeEditar) { %><th></th><% } %></tr></thead>
-      <tbody>
-        <% productos.filter(x => x.categoria === 'frappe').forEach(function(prod) { %>
-          <tr data-nombre="<%= prod.nombre.toLowerCase() %>">
-            <td><%= prod.nombre %></td>
-            <td>Bs <%= Number(prod.precio_venta).toFixed(2) %></td>
-            <td><%= prod.modo === 'elaborado' ? 'Elaborado' : 'Comprado' %></td>
-            <td>
-              <% if (prod.modo === 'comprado') { %>
-                <%= prod.insumo_comprado_nombre || '-' %>
-              <% } else { %>
-                <% prod.receta.forEach(function(r) { %>
-                  <div><%= fmt(r.cantidad_necesaria) %> <%= r.insumo_unidad %> de <%= r.insumo_nombre %></div>
-                <% }) %>
-              <% } %>
-            </td>
-            <% if (puedeEditar) { %>
-            <td><form action="/menu/<%= prod.id %>/eliminar" method="POST" onsubmit="return confirm('¿Quitar del menú?');"><button class="btn-pequeno btn-peligro">Quitar</button></form></td>
-            <% } %>
+<% const secciones = [
+  { clave: 'frappe', titulo: 'Frappes / Refrescos', tablaId: 'tablaMenuFrappe' },
+  { clave: 'masita', titulo: 'Masitas / Snacks', tablaId: 'tablaMenuMasita' },
+  { clave: 'juego_cartas', titulo: 'Juegos de Cartas', tablaId: 'tablaMenuJuegoCartas' },
+  { clave: 'juego_mesa_persona', titulo: 'Juegos de Mesa (por persona)', tablaId: 'tablaMenuJuegoMesa' },
+]; %>
+
+<% secciones.forEach(function(sec) { %>
+  <% const items = productos.filter(x => x.categoria === sec.clave); %>
+  <div class="tarjeta">
+    <h2 style="margin-top:0"><%= sec.titulo %></h2>
+    <p style="font-size:0.8rem; color:var(--color-texto-suave); margin-top:-8px;">Toca un producto para ver el detalle.</p>
+    <div class="tabla-scroll">
+      <table id="<%= sec.tablaId %>">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <% if (sec.clave === 'frappe' || sec.clave === 'masita') { %><th>Precio</th><% } %>
+            <% if (puedeEditar) { %><th></th><% } %>
           </tr>
-        <% }) %>
-        <% if (productos.filter(x => x.categoria === 'frappe').length === 0) { %>
-          <tr><td colspan="5">Todavía no hay frappes/refrescos en el menú.</td></tr>
-        <% } %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <% items.forEach(function(prod) { %>
+            <tr data-nombre="<%= prod.nombre.toLowerCase() %>" onclick="mostrarDetalleProducto(<%= prod.id %>)" style="cursor:pointer;">
+              <td><%= prod.nombre %></td>
+              <% if (sec.clave === 'frappe' || sec.clave === 'masita') { %>
+                <td>Bs <%= Number(prod.precio_venta).toFixed(2) %></td>
+              <% } %>
+              <% if (puedeEditar) { %>
+                <td>
+                  <form action="/menu/<%= prod.id %>/eliminar" method="POST" onclick="event.stopPropagation()" onsubmit="return confirm('¿Quitar del menú?');">
+                    <button class="btn-pequeno btn-peligro">Quitar</button>
+                  </form>
+                </td>
+              <% } %>
+            </tr>
+          <% }) %>
+          <% if (items.length === 0) { %>
+            <tr><td colspan="3">Todavía no hay nada aquí.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
   </div>
+<% }) %>
+
+<!-- Modal de detalle de producto -->
+<div id="overlayDetalleProducto" class="overlay-menu"></div>
+<div id="modalDetalleProducto" class="modal-detalle">
+  <div class="modal-detalle-header">
+    <span>Detalle del producto</span>
+    <button type="button" id="btnCerrarDetalleProducto" aria-label="Cerrar">✕</button>
+  </div>
+  <div id="modalDetalleProductoContenido"></div>
 </div>
 
-<div class="tarjeta">
-  <h2 style="margin-top:0">Masitas / Snacks</h2>
-  <div class="tabla-scroll">
-    <table id="tablaMenuMasita">
-      <thead><tr><th>Producto</th><th>Precio</th><th>Origen</th><th>Detalle</th><% if (puedeEditar) { %><th></th><% } %></tr></thead>
-      <tbody>
-        <% productos.filter(x => x.categoria === 'masita').forEach(function(prod) { %>
-          <tr data-nombre="<%= prod.nombre.toLowerCase() %>">
-            <td><%= prod.nombre %></td>
-            <td>Bs <%= Number(prod.precio_venta).toFixed(2) %></td>
-            <td><%= prod.modo === 'elaborado' ? 'Elaborado' : 'Comprado' %></td>
-            <td>
-              <% if (prod.modo === 'comprado') { %>
-                <%= prod.insumo_comprado_nombre || '-' %>
-              <% } else { %>
-                <% prod.receta.forEach(function(r) { %>
-                  <div><%= fmt(r.cantidad_necesaria) %> <%= r.insumo_unidad %> de <%= r.insumo_nombre %></div>
-                <% }) %>
-              <% } %>
-            </td>
-            <% if (puedeEditar) { %>
-            <td><form action="/menu/<%= prod.id %>/eliminar" method="POST" onsubmit="return confirm('¿Quitar del menú?');"><button class="btn-pequeno btn-peligro">Quitar</button></form></td>
-            <% } %>
-          </tr>
-        <% }) %>
-        <% if (productos.filter(x => x.categoria === 'masita').length === 0) { %>
-          <tr><td colspan="5">Todavía no hay masitas/snacks en el menú.</td></tr>
-        <% } %>
-      </tbody>
-    </table>
-  </div>
-</div>
 
 <script>
   const inventarioDisponible = <%- JSON.stringify(inventario.map(i => ({ id: i.id, nombre: i.nombre, unidad: i.unidad }))) %>;
+
+  function esJuego(categoria) {
+    return categoria === 'juego_cartas' || categoria === 'juego_mesa_persona';
+  }
+
+  function cambiarCategoria() {
+    const categoria = document.getElementById('categoria').value;
+    const modoSelect = document.getElementById('modo');
+
+    if (esJuego(categoria)) {
+      document.getElementById('campoPrecioVenta').style.display = 'none';
+      document.getElementById('campoModo').style.display = 'none';
+      document.getElementById('bloqueComprado').style.display = 'none';
+      document.getElementById('bloqueElaborado').style.display = 'none';
+      document.getElementById('notaJuego').style.display = 'block';
+      if (!modoSelect.querySelector('option[value="servicio"]')) {
+        const opt = document.createElement('option');
+        opt.value = 'servicio';
+        opt.textContent = 'Servicio (juego)';
+        modoSelect.appendChild(opt);
+      }
+      modoSelect.value = 'servicio';
+    } else {
+      document.getElementById('campoPrecioVenta').style.display = 'flex';
+      document.getElementById('campoModo').style.display = 'block';
+      document.getElementById('notaJuego').style.display = 'none';
+      if (modoSelect.value === 'servicio') modoSelect.value = 'elaborado';
+      cambiarModo();
+    }
+  }
 
   function cambiarModo() {
     const modo = document.getElementById('modo').value;
@@ -168,11 +199,97 @@
   }
 
   if (document.getElementById('formMenu')) {
-    cambiarModo();
+    cambiarCategoria();
     agregarFilaReceta();
   }
 
-  activarBuscador('buscarMenu', 'tablaMenuFrappe', 'tablaMenuMasita');
+  activarBuscador('buscarMenu', 'tablaMenuFrappe', 'tablaMenuMasita', 'tablaMenuJuegoCartas', 'tablaMenuJuegoMesa');
+
+  // ---------- Modal de detalle de producto ----------
+  const puedeEditarMenu = <%- JSON.stringify(!!puedeEditar) %>;
+  const detallesProducto = <%- JSON.stringify(
+    productos.reduce(function (acc, prod) {
+      acc[prod.id] = {
+        nombre: prod.nombre,
+        categoria: prod.categoria,
+        modo: prod.modo,
+        precio_venta: Number(prod.precio_venta),
+        insumo_comprado_nombre: prod.insumo_comprado_nombre || null,
+        preparacion: prod.preparacion || null,
+        receta: (prod.receta || []).map(function (r) {
+          return {
+            insumo_nombre: r.insumo_nombre,
+            insumo_unidad: r.insumo_unidad,
+            cantidad_necesaria: r.cantidad_necesaria,
+            costo_bs: Number(r.cantidad_necesaria) * Number(r.insumo_precio_unitario || 0),
+          };
+        }),
+      };
+      return acc;
+    }, {})
+  ) %>;
+
+  function filaDetalleProducto(etiqueta, valor) {
+    return '<div class="detalle-fila"><span>' + etiqueta + '</span><span>' + valor + '</span></div>';
+  }
+
+  function fmtNumProducto(n) {
+    return Number(n).toLocaleString('es-BO', { maximumFractionDigits: 3 });
+  }
+
+  function mostrarDetalleProducto(id) {
+    const d = detallesProducto[id];
+    if (!d) return;
+
+    let html = '';
+    html += filaDetalleProducto('Nombre', d.nombre);
+    if (d.modo !== 'servicio') {
+      html += filaDetalleProducto('Precio de venta', 'Bs ' + d.precio_venta.toFixed(2));
+    }
+
+    if (d.modo === 'comprado') {
+      html += filaDetalleProducto('Se compra ya hecho', d.insumo_comprado_nombre || '-');
+    } else if (d.modo === 'elaborado') {
+      let costoTotal = 0;
+      html += '<div style="margin-top:10px; font-weight:600;">Insumos que usa:</div>';
+      if (d.receta.length === 0) {
+        html += '<p style="font-size:0.85rem; color:var(--color-texto-suave);">Todavía no se agregaron insumos.</p>';
+      }
+      d.receta.forEach(function (r) {
+        costoTotal += r.costo_bs;
+        html += filaDetalleProducto(
+          fmtNumProducto(r.cantidad_necesaria) + ' ' + r.insumo_unidad + ' de ' + r.insumo_nombre,
+          'Bs ' + r.costo_bs.toFixed(2)
+        );
+      });
+      if (d.receta.length > 0) {
+        html += filaDetalleProducto('Costo total de insumos', 'Bs ' + costoTotal.toFixed(2));
+        html += filaDetalleProducto('Ganancia estimada', 'Bs ' + (d.precio_venta - costoTotal).toFixed(2));
+      }
+      if (d.preparacion) {
+        html += '<div style="margin-top:10px; font-weight:600;">Preparación:</div>';
+        html += '<p style="font-size:0.9rem; white-space:pre-line;">' + d.preparacion.replace(/</g, '&lt;') + '</p>';
+      }
+    } else {
+      html += '<p style="font-size:0.85rem; color:var(--color-texto-suave); margin-top:8px;">Es un servicio (no usa insumos del inventario).</p>';
+    }
+
+    if (puedeEditarMenu) {
+      html += '<a href="/menu/' + id + '/editar" class="btn" style="display:block; text-align:center; margin-top:14px;">Editar</a>';
+    }
+
+    document.getElementById('modalDetalleProductoContenido').innerHTML = html;
+    document.getElementById('modalDetalleProducto').classList.add('abierto');
+    document.getElementById('overlayDetalleProducto').classList.add('visible');
+  }
+
+  function cerrarDetalleProducto() {
+    document.getElementById('modalDetalleProducto').classList.remove('abierto');
+    document.getElementById('overlayDetalleProducto').classList.remove('visible');
+  }
+
+  document.getElementById('btnCerrarDetalleProducto').addEventListener('click', cerrarDetalleProducto);
+  document.getElementById('overlayDetalleProducto').addEventListener('click', cerrarDetalleProducto);
 </script>
 
 <%- include('../partials/footer') %>

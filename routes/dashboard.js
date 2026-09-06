@@ -12,7 +12,8 @@ router.get('/', (req, res) => res.redirect('/ingresos-gastos'));
 // INGRESOS Y GASTOS DEL DÍA
 // ============================================================
 router.get('/ingresos-gastos', requierePermisoVer('ingresos_gastos'), async (req, res) => {
-  const fecha = req.query.fecha || fechaHoyBolivia();
+  const esAdmin = !!req.session.esAdmin;
+  const fecha = (esAdmin && req.query.fecha) ? req.query.fecha : fechaHoyBolivia();
   const mes = fecha.slice(0, 7);
 
   const movimientosDia = await pool.query(
@@ -55,7 +56,9 @@ router.get('/ingresos-gastos', requierePermisoVer('ingresos_gastos'), async (req
 });
 
 router.post('/ingresos-gastos', requierePermisoEditar('ingresos_gastos'), async (req, res) => {
-  const { fecha, tipo, servicio, producto_id, cantidad, descripcion, horas, personas, tarifa, monto } = req.body;
+  const { tipo, servicio, producto_id, cantidad, descripcion, horas, personas, tarifa, monto } = req.body;
+  // Solo el admin puede registrar movimientos en una fecha distinta a hoy
+  const fecha = req.session.esAdmin && req.body.fecha ? req.body.fecha : fechaHoyBolivia();
 
   const r = await pool.query(
     `INSERT INTO movimientos (fecha, tipo, servicio, producto_id, cantidad, descripcion, horas, personas, tarifa, monto, usuario_id)
@@ -192,11 +195,18 @@ router.get('/menu', requierePermisoVer('menu'), async (req, res) => {
 });
 
 router.post('/menu', requierePermisoEditar('menu'), async (req, res) => {
-  const { nombre, categoria, modo, precio_venta, inventario_id_comprado } = req.body;
+  const { nombre, categoria, modo, precio_venta, inventario_id_comprado, preparacion } = req.body;
   const r = await pool.query(
-    `INSERT INTO menu_productos (nombre, categoria, modo, precio_venta, inventario_id_comprado)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-    [nombre, categoria, modo, precio_venta || 0, modo === 'comprado' ? inventario_id_comprado || null : null]
+    `INSERT INTO menu_productos (nombre, categoria, modo, precio_venta, inventario_id_comprado, preparacion)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+    [
+      nombre,
+      categoria,
+      modo,
+      precio_venta || 0,
+      modo === 'comprado' ? inventario_id_comprado || null : null,
+      modo === 'elaborado' ? preparacion || null : null,
+    ]
   );
   const productoId = r.rows[0].id;
 
@@ -212,6 +222,55 @@ router.post('/menu', requierePermisoEditar('menu'), async (req, res) => {
         `INSERT INTO menu_receta (producto_id, insumo_id, cantidad_necesaria) VALUES ($1,$2,$3)`,
         [productoId, insumos[i], cantidades[i]]
       );
+    }
+  }
+  res.redirect('/menu');
+});
+
+// ---------- Editar un producto del menú ----------
+router.get('/menu/:id/editar', requierePermisoEditar('menu'), async (req, res) => {
+  const producto = await pool.query('SELECT * FROM menu_productos WHERE id = $1', [req.params.id]);
+  if (!producto.rows[0]) return res.redirect('/menu');
+
+  const receta = await pool.query(
+    `SELECT r.*, i.nombre AS insumo_nombre, i.unidad AS insumo_unidad
+     FROM menu_receta r JOIN inventario i ON i.id = r.insumo_id WHERE r.producto_id = $1`,
+    [req.params.id]
+  );
+  const inventario = await calc.obtenerInventario();
+  res.render('dashboard/menu-editar', { producto: producto.rows[0], receta: receta.rows, inventario });
+});
+
+router.post('/menu/:id/editar', requierePermisoEditar('menu'), async (req, res) => {
+  const { nombre, precio_venta, preparacion, inventario_id_comprado } = req.body;
+  const producto = await pool.query('SELECT modo FROM menu_productos WHERE id = $1', [req.params.id]);
+  const modo = producto.rows[0] ? producto.rows[0].modo : null;
+
+  await pool.query(
+    `UPDATE menu_productos SET nombre = $1, precio_venta = $2, preparacion = $3, inventario_id_comprado = $4 WHERE id = $5`,
+    [
+      nombre,
+      precio_venta || 0,
+      modo === 'elaborado' ? preparacion || null : null,
+      modo === 'comprado' ? inventario_id_comprado || null : null,
+      req.params.id,
+    ]
+  );
+
+  if (modo === 'elaborado') {
+    await pool.query('DELETE FROM menu_receta WHERE producto_id = $1', [req.params.id]);
+    if (req.body.insumo_id) {
+      const insumos = Array.isArray(req.body.insumo_id) ? req.body.insumo_id : [req.body.insumo_id];
+      const cantidades = Array.isArray(req.body.cantidad_necesaria)
+        ? req.body.cantidad_necesaria
+        : [req.body.cantidad_necesaria];
+      for (let i = 0; i < insumos.length; i++) {
+        if (!insumos[i] || !cantidades[i]) continue;
+        await pool.query(
+          `INSERT INTO menu_receta (producto_id, insumo_id, cantidad_necesaria) VALUES ($1,$2,$3)`,
+          [req.params.id, insumos[i], cantidades[i]]
+        );
+      }
     }
   }
   res.redirect('/menu');

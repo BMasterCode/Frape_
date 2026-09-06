@@ -11,15 +11,16 @@
     <div class="tarjeta">
       <h1>Frape Club</h1>
       <p><%= mensaje %></p>
-      <a href="/" class="btn">Volver al inicio</a>
       <% if (typeof esAdmin !== 'undefined' && esAdmin) { %>
-        <form action="<%= ADMIN_BASE %>/logout" method="POST" style="margin-top:10px;">
-          <button type="submit" class="btn-secundario" style="width:100%;">Cerrar sesión</button>
+        <form action="<%= ADMIN_BASE %>/logout" method="POST">
+          <button type="submit" style="width:100%;">Cerrar sesión</button>
         </form>
       <% } else if (typeof usuarioActual !== 'undefined' && usuarioActual) { %>
-        <form action="/logout" method="POST" style="margin-top:10px;">
-          <button type="submit" class="btn-secundario" style="width:100%;">Cerrar sesión</button>
+        <form action="/logout" method="POST">
+          <button type="submit" style="width:100%;">Cerrar sesión</button>
         </form>
+      <% } else { %>
+        <a href="/login" class="btn">Ir al login</a>
       <% } %>
     </div>
   </div>

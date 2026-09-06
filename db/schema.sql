@@ -106,10 +106,11 @@ CREATE TABLE IF NOT EXISTS inventario (
 CREATE TABLE IF NOT EXISTS menu_productos (
   id SERIAL PRIMARY KEY,
   nombre TEXT NOT NULL,
-  categoria TEXT NOT NULL CHECK (categoria IN ('frappe','masita')),
-  modo TEXT NOT NULL CHECK (modo IN ('elaborado','comprado')),
+  categoria TEXT NOT NULL CHECK (categoria IN ('frappe','masita','juego_cartas','juego_mesa_persona')),
+  modo TEXT NOT NULL CHECK (modo IN ('elaborado','comprado','servicio')),
   inventario_id_comprado INTEGER REFERENCES inventario(id) ON DELETE SET NULL, -- solo si modo = 'comprado'
   precio_venta NUMERIC(12,2) NOT NULL DEFAULT 0,
+  preparacion TEXT, -- instrucciones de preparación (solo aplica a 'elaborado')
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );

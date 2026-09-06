@@ -1,0 +1,89 @@
+<%- include('../partials/header', { titulo: 'Editar producto - Frape Club', pestanaActiva: 'menu' }) %>
+
+<a href="/menu" class="enlace-volver">← Volver al menú</a>
+<h1>Editar: <%= producto.nombre %></h1>
+
+<div class="tarjeta">
+  <form action="/menu/<%= producto.id %>/editar" method="POST" id="formEditarMenu">
+    <div class="fila">
+      <div class="campo">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" value="<%= producto.nombre %>" required />
+      </div>
+      <% if (producto.modo !== 'servicio') { %>
+      <div class="campo">
+        <label for="precio_venta">Precio de venta (Bs)</label>
+        <input type="number" step="0.01" min="0" id="precio_venta" name="precio_venta" value="<%= producto.precio_venta %>" required />
+      </div>
+      <% } %>
+    </div>
+
+    <% if (producto.modo === 'comprado') { %>
+      <div class="campo">
+        <label for="inventario_id_comprado">Producto en el inventario</label>
+        <select id="inventario_id_comprado" name="inventario_id_comprado">
+          <option value="">-- Selecciona --</option>
+          <% inventario.forEach(function(i) { %>
+            <option value="<%= i.id %>" <%= producto.inventario_id_comprado === i.id ? 'selected' : '' %>>
+              <%= i.nombre %> (stock: <%= fmt(i.stock) %> <%= i.unidad %>)
+            </option>
+          <% }) %>
+        </select>
+      </div>
+    <% } %>
+
+    <% if (producto.modo === 'elaborado') { %>
+      <label style="display:block; margin-bottom:6px;">Insumos que necesita (por 1 unidad vendida)</label>
+      <div id="filasReceta"></div>
+      <button type="button" class="btn-secundario btn-pequeno" onclick="agregarFilaReceta()">+ Agregar insumo</button>
+
+      <div class="campo" style="margin-top:16px;">
+        <label for="preparacion">Preparación (opcional)</label>
+        <textarea id="preparacion" name="preparacion" rows="6" placeholder="Ej: 1. Moler el hielo con la leche y el café...&#10;2. Servir en vaso alto...&#10;3. Agregar crema batida encima."><%= producto.preparacion || '' %></textarea>
+      </div>
+    <% } %>
+
+    <button type="submit" style="margin-top:16px;">Guardar cambios</button>
+  </form>
+</div>
+
+<% if (producto.modo === 'elaborado') { %>
+<script>
+  const inventarioDisponible = <%- JSON.stringify(inventario.map(i => ({ id: i.id, nombre: i.nombre, unidad: i.unidad }))) %>;
+  const recetaActual = <%- JSON.stringify(receta.map(r => ({ insumo_id: r.insumo_id, cantidad_necesaria: r.cantidad_necesaria }))) %>;
+
+  function agregarFilaReceta(insumoSeleccionado, cantidadActual) {
+    const cont = document.getElementById('filasReceta');
+    const fila = document.createElement('div');
+    fila.className = 'fila';
+    fila.style.alignItems = 'flex-end';
+
+    let opciones = '<option value="">-- Insumo --</option>';
+    inventarioDisponible.forEach(function (i) {
+      const sel = String(i.id) === String(insumoSeleccionado) ? 'selected' : '';
+      opciones += `<option value="${i.id}" ${sel}>${i.nombre} (${i.unidad})</option>`;
+    });
+
+    fila.innerHTML = `
+      <div class="campo" style="flex:2;">
+        <label>Insumo</label>
+        <select name="insumo_id">${opciones}</select>
+      </div>
+      <div class="campo">
+        <label>Cantidad necesaria</label>
+        <input type="number" step="0.001" min="0" name="cantidad_necesaria" value="${cantidadActual || ''}" />
+      </div>
+      <button type="button" class="btn-pequeno btn-peligro" onclick="this.parentElement.remove()">Quitar</button>
+    `;
+    cont.appendChild(fila);
+  }
+
+  if (recetaActual.length > 0) {
+    recetaActual.forEach(function (r) { agregarFilaReceta(r.insumo_id, r.cantidad_necesaria); });
+  } else {
+    agregarFilaReceta();
+  }
+</script>
+<% } %>
+
+<%- include('../partials/footer') %>
