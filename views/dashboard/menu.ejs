@@ -84,9 +84,10 @@
   { clave: 'juego_mesa_persona', titulo: 'Juegos de Mesa (por persona)', tablaId: 'tablaMenuJuegoMesa' },
 ]; %>
 
+<div id="seccionesMenu">
 <% secciones.forEach(function(sec) { %>
   <% const items = productos.filter(x => x.categoria === sec.clave); %>
-  <div class="tarjeta">
+  <div class="tarjeta" id="seccion-<%= sec.clave %>" data-tabla="<%= sec.tablaId %>">
     <h2 style="margin-top:0"><%= sec.titulo %></h2>
     <p style="font-size:0.8rem; color:var(--color-texto-suave); margin-top:-8px;">Toca un producto para ver el detalle.</p>
     <div class="tabla-scroll">
@@ -122,6 +123,7 @@
     </div>
   </div>
 <% }) %>
+</div>
 
 <!-- Modal de detalle de producto -->
 <div id="overlayDetalleProducto" class="overlay-menu"></div>
@@ -204,6 +206,43 @@
   }
 
   activarBuscador('buscarMenu', 'tablaMenuFrappe', 'tablaMenuMasita', 'tablaMenuJuegoCartas', 'tablaMenuJuegoMesa');
+
+  // ---------- Reordenar secciones según cuál tiene más resultados ----------
+  const contenedorSecciones = document.getElementById('seccionesMenu');
+  const ordenOriginalSecciones = Array.from(contenedorSecciones.children);
+
+  function reordenarSecciones() {
+    const q = document.getElementById('buscarMenu').value.trim().toLowerCase();
+
+    if (!q) {
+      // Sin búsqueda: se restaura el orden original y se muestran todas
+      ordenOriginalSecciones.forEach(function (sec) {
+        sec.style.display = '';
+        contenedorSecciones.appendChild(sec);
+      });
+      return;
+    }
+
+    const conteo = ordenOriginalSecciones.map(function (sec) {
+      const tablaId = sec.dataset.tabla;
+      const filas = document.querySelectorAll('#' + tablaId + ' tbody tr[data-nombre]');
+      let coincidencias = 0;
+      filas.forEach(function (fila) {
+        if ((fila.getAttribute('data-nombre') || '').includes(q)) coincidencias++;
+      });
+      return { seccion: sec, coincidencias: coincidencias };
+    });
+
+    // Las que tienen resultados van primero (y entre ellas, mantienen su orden original)
+    conteo.sort(function (a, b) { return b.coincidencias - a.coincidencias; });
+
+    conteo.forEach(function (item) {
+      item.seccion.style.display = item.coincidencias > 0 ? '' : 'none';
+      contenedorSecciones.appendChild(item.seccion);
+    });
+  }
+
+  document.getElementById('buscarMenu').addEventListener('input', reordenarSecciones);
 
   // ---------- Modal de detalle de producto ----------
   const puedeEditarMenu = <%- JSON.stringify(!!puedeEditar) %>;
